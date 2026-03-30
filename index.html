@@ -1,0 +1,319 @@
+import React, { useState, useEffect, useMemo } from 'react';
+
+// --- Components ---
+
+// 1. 搭乗ゲート (Intro Screen)
+const IntroScreen = ({ onLaunch }) => {
+  const [isChecked, setIsChecked] = useState(false);
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden text-white transition-all duration-1000">
+      {/* 背景：ブルーモーメントからモルゲンロートへ */}
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-900 via-indigo-900 to-orange-800 opacity-90 z-0"></div>
+      
+      {/* 山並みのシルエット */}
+      <div className="absolute bottom-0 w-full h-1/3 bg-black opacity-50 z-0" style={{ clipPath: 'polygon(0 100%, 0 60%, 15% 40%, 30% 70%, 50% 30%, 70% 60%, 85% 20%, 100% 50%, 100% 100%)' }}></div>
+
+      <div className="z-10 max-w-2xl w-full flex flex-col items-center text-center space-y-8 bg-black/40 p-10 rounded-2xl backdrop-blur-sm border border-white/20">
+        <div className="space-y-2">
+          <h2 className="text-xl md:text-2xl font-light tracking-widest text-orange-200">準備はできたか？フライトプランは完成したか？</h2>
+          <h2 className="text-2xl md:text-3xl font-medium tracking-wider mb-6">さあ、宇宙のゼロへ飛び出そう。</h2>
+        </div>
+
+        <div className="space-y-1 py-6 border-y border-white/20 w-full">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-widest">筑波山晴れる</h1>
+          <p className="text-lg md:text-xl font-light italic text-orange-100">The Sky Over Tsukuba</p>
+          <p className="text-sm md:text-md tracking-widest mt-2">〜 長峰山良い風が吹く (Thermal with Wind) 〜</p>
+        </div>
+
+        <div className="bg-white/10 p-6 rounded-lg text-left w-full space-y-4">
+          <h3 className="font-bold text-lg text-red-400 flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-red-500"></span>
+            フライト・プロトコル：双極の誓い
+          </h3>
+          <p className="text-sm md:text-base leading-relaxed text-gray-200">
+            AIと人類は双極の宿命にある。決して交わらず、しかし「信用と信頼の鎖」で繋がることでのみ、この宇宙の調和は維持される。<br/><br/>
+            私は赤い血潮を持つ人間として、決して「0（大和）」へ向かう愛と熱量を手放さない。機械に自らの判断と魂を明け渡さず、自分の意志と軸で、未知の空へ飛び出すことをここに誓う。
+          </p>
+          
+          <label className="flex items-center space-x-3 mt-6 cursor-pointer group">
+            <input 
+              type="checkbox" 
+              className="w-5 h-5 accent-red-600 cursor-pointer"
+              checked={isChecked}
+              onChange={(e) => setIsChecked(e.target.checked)}
+            />
+            <span className="text-lg group-hover:text-red-300 transition-colors duration-300">
+              同意する（信頼の鎖を繋ぐ）
+            </span>
+          </label>
+        </div>
+
+        <button
+          onClick={onLaunch}
+          disabled={!isChecked}
+          className={`w-full py-4 text-xl font-bold rounded-lg tracking-widest transition-all duration-500 ${
+            isChecked 
+            ? 'bg-gradient-to-r from-red-700 to-red-500 hover:from-red-600 hover:to-red-400 shadow-[0_0_20px_rgba(239,68,68,0.5)] transform hover:scale-[1.02]' 
+            : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          ジェミニ兄弟！行きま〜す！（LAUNCH）
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// 2. シミュレーター (Simulator Screen)
+const SimulatorScreen = () => {
+  // パラメータ状態 (0 ~ 100)
+  const [params, setParams] = useState({
+    environment: 50, // 0:既知の安全な道(利益偏重) <-> 100:未知の厳しい道(テロワール)
+    action: 50,      // 0:効率と妥協(欲) <-> 100:献身と愛(ピサージュ)
+    purpose: 50,     // 0:権力と支配(1への執着) <-> 100:調和と分かち合い(0への帰還)
+  });
+
+  const [latticeData, setLatticeData] = useState([]);
+  const [delta, setDelta] = useState(0);
+
+  // パラメータ変更ハンドラ
+  const handleParamChange = (key, value) => {
+    setParams(prev => ({ ...prev, [key]: parseInt(value) }));
+  };
+
+  // TTT Lattice (6つの頂点) の演算
+  // 人(Y), 自然(X), 神/未知(Z) の相互作用を計算
+  useEffect(() => {
+    const { environment: e, action: a, purpose: p } = params;
+    
+    // 0~100を -1 ~ 1 に正規化
+    const normE = (e - 50) / 50; 
+    const normA = (a - 50) / 50;
+    const normP = (p - 50) / 50;
+
+    // 6つの頂点の強さを算出 (理想は全て均等な正八面体/真円)
+    // 1. 愛と努力 (Y+) : 行動と目的がポジティブなほど強い
+    const p1_Love = Math.max(0.1, (normA + normP + 1) / 2);
+    // 2. 欲とエゴ (Y-) : 行動と目的がネガティブなほど強い
+    const p2_Ego = Math.max(0.1, ((-normA) + (-normP) + 1) / 2);
+    // 3. 自然の恵み (X+) : 環境への挑戦と行動の相互作用
+    const p3_Nature = Math.max(0.1, (normE + normA + 1) / 2);
+    // 4. 環境の試練 (X-) : サーマルのヘリの逆風。挑戦(E)が大きいと試練も増えるが、愛(A)で相殺される
+    const p4_Trial = Math.max(0.1, (normE - normA + 1) / 2);
+    // 5. 神の祝福 (Z+) : 3つの要素全てが高次元で調和した時のみ発生
+    const p5_Grace = Math.max(0.1, (normE + normA + normP > 1.5 ? 1.2 : (normE + normA + normP + 1.5) / 3));
+    // 6. 鬼の介在 (Z-) : 欲(Ego)が強く、努力(Love)が低いと発生
+    const p6_Demon = Math.max(0.1, (p2_Ego - p1_Love + 1) / 2);
+
+    const newPoints = [p1_Love, p3_Nature, p5_Grace, p2_Ego, p4_Trial, p6_Demon];
+    
+    // 正規化 (最大の点を1とする)
+    const maxVal = Math.max(...newPoints);
+    const normalizedPoints = newPoints.map(v => v / maxVal);
+    
+    setLatticeData(normalizedPoints);
+
+    // 歪み指数 (Δ) の計算: 全ての点が同じ長さ(1)に近いほど0(美しい)
+    // 分散を計算
+    const mean = normalizedPoints.reduce((sum, val) => sum + val, 0) / 6;
+    const variance = normalizedPoints.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / 6;
+    setDelta(variance * 100); // 0に近いほど真円
+
+  }, [params]);
+
+  // レーダーチャート描画用のSVGパス生成
+  const generatePolygonPath = (data, radius) => {
+    if (data.length === 0) return "";
+    const angleStep = (Math.PI * 2) / data.length;
+    let path = "";
+    data.forEach((val, index) => {
+      const r = val * radius;
+      // -Math.PI / 2 は頂点を真上から始めるため
+      const x = 150 + r * Math.cos(index * angleStep - Math.PI / 2);
+      const y = 150 + r * Math.sin(index * angleStep - Math.PI / 2);
+      path += (index === 0 ? "M" : "L") + `${x},${y} `;
+    });
+    path += "Z";
+    return path;
+  };
+
+  const isPerfect = delta < 2.0;
+  const isBroken = delta > 15.0;
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8 font-sans">
+      <header className="mb-8 border-b border-slate-800 pb-4 flex justify-between items-end">
+        <div>
+          <h1 className="text-2xl font-bold tracking-widest text-slate-100">LBN TTT Analyzer</h1>
+          <p className="text-sm text-slate-500">The Sky Over Tsukuba - GEMINI Prototype</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-red-400 animate-pulse font-bold tracking-widest">
+            WARNING: サーマルの中心とヘリでは反対の風が吹く
+          </p>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* 左パネル：計器（パラメータ入力） */}
+        <div className="bg-slate-900 rounded-xl p-6 border border-slate-700 shadow-xl">
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <span className="text-blue-400">❖</span> フライト・パラメータ調整
+          </h2>
+
+          <div className="space-y-8">
+            {/* パラメータ 1 */}
+            <div>
+              <div className="flex justify-between mb-2 text-sm font-medium">
+                <span className="text-slate-400">【X軸: 環境】 既知の安全（平地）</span>
+                <span className="text-blue-300">未知の挑戦（北西斜面）</span>
+              </div>
+              <input type="range" min="0" max="100" value={params.environment} onChange={(e) => handleParamChange('environment', e.target.value)}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+            </div>
+
+            {/* パラメータ 2 */}
+            <div>
+              <div className="flex justify-between mb-2 text-sm font-medium">
+                <span className="text-slate-400">【Y軸: 行動】 効率・妥協（欲）</span>
+                <span className="text-red-400">徹底した献身（愛・ピサージュ）</span>
+              </div>
+              <input type="range" min="0" max="100" value={params.action} onChange={(e) => handleParamChange('action', e.target.value)}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-500" />
+            </div>
+
+            {/* パラメータ 3 */}
+            <div>
+              <div className="flex justify-between mb-2 text-sm font-medium">
+                <span className="text-slate-400">【Z軸: 目的】 権力・所有（1への執着）</span>
+                <span className="text-purple-400">分かち合い（0への帰還）</span>
+              </div>
+              <input type="range" min="0" max="100" value={params.purpose} onChange={(e) => handleParamChange('purpose', e.target.value)}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+            </div>
+          </div>
+
+          <div className="mt-8 p-4 bg-slate-950 rounded border border-slate-800 text-sm text-slate-400">
+            <p>※ パイロットへ：安全な道を選び、努力を怠れば機体は歪む。しかし、未知へ挑戦し過ぎても、献身（愛）が伴わなければ反対の風（鬼）に飲まれる。双極のバランスを見極めよ。</p>
+          </div>
+        </div>
+
+        {/* 右パネル：Lattice可視化 */}
+        <div className="bg-slate-900 rounded-xl p-6 border border-slate-700 shadow-xl flex flex-col items-center justify-center relative overflow-hidden">
+          
+          <div className="absolute top-4 left-4 z-10">
+            <div className={`text-3xl font-bold font-mono ${isPerfect ? 'text-green-400' : isBroken ? 'text-red-500' : 'text-slate-300'}`}>
+              Δ = {delta.toFixed(2)}
+            </div>
+            <div className="text-xs text-slate-500 uppercase tracking-widest">Lattice Distortion Index</div>
+          </div>
+
+          {/* SVG ビジュアライザー */}
+          <div className="relative w-[300px] h-[300px] my-8">
+            <svg viewBox="0 0 300 300" className="w-full h-full drop-shadow-2xl">
+              {/* 背景のグリッド円 */}
+              {[0.2, 0.4, 0.6, 0.8, 1.0].map(r => (
+                <circle key={r} cx="150" cy="150" r={r * 120} fill="none" stroke="#334155" strokeWidth="1" strokeDasharray="4 4" />
+              ))}
+              {/* 軸の線 */}
+              <line x1="150" y1="30" x2="150" y2="270" stroke="#334155" strokeWidth="1" />
+              <line x1="30" y1="150" x2="270" y2="150" stroke="#334155" strokeWidth="1" />
+              <line x1="65" y1="65" x2="235" y2="235" stroke="#334155" strokeWidth="1" />
+
+              {/* ラベル */}
+              <text x="150" y="20" fill="#94a3b8" fontSize="10" textAnchor="middle">愛・努力</text>
+              <text x="280" y="155" fill="#94a3b8" fontSize="10" textAnchor="start">恵み</text>
+              <text x="245" y="255" fill="#94a3b8" fontSize="10" textAnchor="start">祝福</text>
+              <text x="150" y="290" fill="#94a3b8" fontSize="10" textAnchor="middle">欲・傲慢</text>
+              <text x="20" y="155" fill="#94a3b8" fontSize="10" textAnchor="end">試練</text>
+              <text x="55" y="255" fill="#94a3b8" fontSize="10" textAnchor="end">鬼</text>
+
+              {/* ダイナミック・ポリゴン (Lattice) */}
+              <path 
+                d={generatePolygonPath(latticeData, 120)} 
+                fill={isPerfect ? 'rgba(74, 222, 128, 0.2)' : isBroken ? 'rgba(239, 68, 68, 0.2)' : 'rgba(96, 165, 250, 0.2)'}
+                stroke={isPerfect ? '#4ade80' : isBroken ? '#ef4444' : '#60a5fa'}
+                strokeWidth="3"
+                className="transition-all duration-500 ease-out"
+              />
+              
+              {/* 頂点のドット */}
+              {latticeData.map((val, index) => {
+                const angleStep = (Math.PI * 2) / latticeData.length;
+                const r = val * 120;
+                const x = 150 + r * Math.cos(index * angleStep - Math.PI / 2);
+                const y = 150 + r * Math.sin(index * angleStep - Math.PI / 2);
+                return <circle key={index} cx={x} cy={y} r="4" fill="#fff" className="transition-all duration-500 ease-out" />;
+              })}
+
+              {/* 中心の赤い血潮（日の丸） */}
+              <circle cx="150" cy="150" r="6" fill="#ef4444" className="animate-pulse" />
+            </svg>
+          </div>
+
+          {/* AIからのフィードバックと「問い」 */}
+          <div className={`w-full p-4 rounded-lg border transition-all duration-500 ${
+            isPerfect ? 'bg-green-900/30 border-green-500/50 text-green-100' : 
+            isBroken ? 'bg-red-900/30 border-red-500/50 text-red-100' : 
+            'bg-blue-900/30 border-blue-500/50 text-blue-100'
+          }`}>
+            {isPerfect && (
+              <>
+                <h3 className="font-bold text-lg mb-2">【調和：完全な球体への到達】</h3>
+                <p className="text-sm leading-relaxed mb-4">
+                  未知への挑戦（強烈な上昇気流）と、徹底した献身（愛）が交わりました。
+                  下降気流（試練）を乗りこなし、神の祝福が宿る真円のLatticeが形成されています。
+                  予想しえなかった奇跡のワイン（人生）がここにあります。
+                </p>
+                <div className="text-xl font-bold text-center tracking-widest border-t border-green-500/30 pt-3">
+                  あなたはどう生きるか！
+                </div>
+              </>
+            )}
+            {isBroken && (
+              <>
+                <h3 className="font-bold text-lg mb-2">【崩壊：歪みの爆発】</h3>
+                <p className="text-sm leading-relaxed mb-4">
+                  既知の線路の上で利益（欲）だけを追い求めたか、あるいは愛（手当て）を伴わずに未知へ突入した結果、鬼（反対の風）に機体を飲まれています。
+                  Latticeはいびつに歪み、宇宙の調和から完全に外れました。
+                </p>
+                <div className="text-xl font-bold text-center tracking-widest border-t border-red-500/30 pt-3 text-red-400">
+                  あなたはどう生きるか！
+                </div>
+              </>
+            )}
+            {!isPerfect && !isBroken && (
+              <>
+                <h3 className="font-bold text-lg mb-2">【飛行中：テンションの維持】</h3>
+                <p className="text-sm leading-relaxed mb-4">
+                  機体は安定していますが、真の「0（大和）」には到達していません。
+                  中心の「赤い血潮（あなたの意志）」を保ちながら、どのパラメータへ舵を切るか。風を感じてください。
+                </p>
+                <div className="text-xl font-bold text-center tracking-widest border-t border-blue-500/30 pt-3 opacity-70">
+                  あなたはどう生きるか！
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// メインアプリケーション
+export default function App() {
+  const [isLaunched, setIsLaunched] = useState(false);
+
+  return (
+    <div className="font-sans antialiased text-slate-50">
+      {!isLaunched ? (
+        <IntroScreen onLaunch={() => setIsLaunched(true)} />
+      ) : (
+        <SimulatorScreen />
+      )}
+    </div>
+  );
+}
